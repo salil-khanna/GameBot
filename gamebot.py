@@ -1,9 +1,24 @@
 # Work with Python 3.6
+import os
 import discord
 
-TOKEN = 'XXXXXXXXXX'
+from discord.ext import commands
+from dotenv import load_dotenv
+
+
+load_dotenv()
+
+TOKEN = os.getenv('DISCORD_TOKEN')
 
 client = discord.Client()
+
+
+@client.event
+async def on_ready():
+    print('Logged in as')
+    print(client.user.name)
+    print(client.user.id)
+    print('------')
 
 @client.event
 async def on_message(message):
@@ -15,11 +30,10 @@ async def on_message(message):
         msg = 'Hello {0.author.mention}'.format(message)
         await client.send_message(message.channel, msg)
 
-@client.event
-async def on_ready():
-    print('Logged in as')
-    print(client.user.name)
-    print(client.user.id)
-    print('------')
+    if message.content.startswith('!ready'):
+        print('Logged in as')
+        print(client.user.name)
+        print(client.user.id)
+        print('------')
 
 client.run(TOKEN)
