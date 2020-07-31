@@ -5,7 +5,7 @@ import random
 import asyncio
 from discord.ext import commands
 
-TOKEN = 'NzM4NjAyNTMyMTUwMDUwODg2.XyOTNg.DCgkv0bX4cFb6ip31Ba9W5_DAIY'
+TOKEN = 'NzM4NjAyNTMyMTUwMDUwODg2.XyOTNg.dSFYt7rKAqx8AznF2FT418nxmgE'
 
 BOT_PREFIX = ("?", "!")
 client = commands.Bot(command_prefix=BOT_PREFIX)
@@ -35,7 +35,7 @@ async def ping(ctx):
 @client.command()
 async def gamelist(ctx):
     message = '''
-    List of games includes:\nCoinGame\nDieGame\nRememberTheNumber\nGuessMyNumber\n
+    List of games includes:\nCoinGame\nDieGame\nGuessTheNumber\nRememberheNumber(Currently not working)\n
 In order to play, type !play followed by a game name
     '''
     await ctx.send(message)
@@ -70,10 +70,12 @@ async def on_message(message):
                  return await channel.send('Sorry, you ran out of time. The answer was {}.'.format(new_coinval))
 
             if user_guess.content.lower() == new_coinval.lower():
-                await channel.send('Yay, you answered right! You had a {:.2%} chance of getting it right!'.format(1/2))
+                await channel.send('Yay, you answered correct!')
             else:
                 await channel.send('WRONG!! It was actually {}.'.format(new_coinval))
-    
+            
+            await channel.send('You had a {:.2%} chance of getting it right!'.format(1/2))
+
         elif "diegame" == userInput.lower():
             await channel.send(startmessage)
             await channel.send("I will roll a die, make your guess on what number it lands on:")
@@ -89,13 +91,15 @@ async def on_message(message):
                  return await channel.send('Sorry, you ran out of time. The answer was {}.'.format(dieval))
 
             if user_guess.content == str(dieval):
-                await channel.send('Yay, you answered right! You had a {:.2%} chance of getting it right!'.format(1/6))
+                await channel.send('Yay, you answered correct!')
             else:
-                await channel.send('WRONG!! It was actually {}.'.format(dieval))
+                await channel.send('WRONG!! It was actually {}.'.format(dieval))   
+            
+            await channel.send('You had a {:.2%} chance of getting it right!'.format(1/6))
 
-        elif "guessmynumber" == userInput.lower():
+        elif "guessthenumber" == userInput.lower():
             await channel.send(startmessage)
-            await channel.send("Type two numbers to set a range for the guessing, :")
+            await channel.send("Type two numbers to set a range for the guessing:")
             
             def is_correct(m):
                 return m.author == message.author and m.content.isdigit()
@@ -103,76 +107,38 @@ async def on_message(message):
             try:
                 range1 = await client.wait_for('message', check=is_correct, timeout = 8.0)
                 range2 = await client.wait_for('message', check=is_correct, timeout = 8.0)
+                range1 = int(range1.content)
+                range2 = int(range2.content)
 
             except asyncio.TimeoutError:
                 range1 = 1
                 range2 = 100
-                return await channel.send("Sorry, you ran out of time. Choose two numbers faster. \nA default from 0 to 100 has been set.")
-                
+                await channel.send("Sorry, you ran out of time. Choose two numbers faster.\nA default from 1 to 100 has been set.")
+
+            
             numberval = random.randint(range1,range2)
+            print(numberval)
+            bottom = (range2-range1)+1
+
+            await channel.send("Guess a number from " + str(range1) + " to " + str(range2) + " now!")
+
             try:
                 user_guess = await client.wait_for('message', check=is_correct, timeout = 8.0)
             except asyncio.TimeoutError:
                  return await channel.send('Sorry, you ran out of time. The answer was {}.'.format(numberval))
 
-            if user_guess.content == str(dieval):
-                await channel.send('Yay, you answered right!')
+            if user_guess.content == str(numberval):
+                await channel.send('Yay, you answered correct!')
             else:
                 await channel.send('WRONG!! It was actually {}.'.format(numberval))
+            
+            await channel.send('You had a {:.2%} chance of getting it right!'.format(1/bottom))
+
         else:
             await channel.send("Please choose a valid game name from gamelist")
-        
+            
   
     await client.process_commands(message)    
-
-"""
-@client.command()
-async def play(ctx, *args):
-    if not args:
-        await ctx.send("Please add the game name you would like to play")
-    else:
-        startmessage = 'Initializing ' + args[0] + '...'
-        if args[0] == 'CoinGame':
-            await ctx.send(startmessage)
-            await ctx.send("I will flip a coin, make your guess on what side it lands on:")
-            
-            def is_correct(m):
-                return m.author == ctx.author and m.content.isdigit()
-            
-            def coinval_convert(coinval):
-                if coinval == 0:
-                    coinval == "Heads"
-                elif coinval == 1:
-                    coinval == "Tails"
-                return coinval
-
-            coinval = random.randint(0,1)
-            coinval = coinval_convert(coinval)
-            
-            #try:
-            user_guess = await client.wait_for('message', check=is_correct)
-            # except asyncio.TimeoutError:
-            #     return await ctx.send('Sorry, you took too long it was {}.'.format(coinval))
-
-            if user_guess.content == coinval:
-                await ctx.send('You are right!')
-            else:
-                await ctx.send('Oops. It is actually {}.'.format(coinval))
-"""
-        
-
-# @client.event
-# async def on_message(message):
-#     if message == 'CoinGame':
-#         coinval = random.randint(0,1)
-#         print(coinval)
-
-
-    # if client.user.id != message.author.id:
-    #     if 'foo' in message.content:
-    #         await client.send_message(message.channel, 'bar')
-
-    # await client.process_commands(message)
 
 # @client.command()
 # async def stock(ctx, *args):
