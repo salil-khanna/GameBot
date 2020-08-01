@@ -1,36 +1,48 @@
-# Work with Python 3.6
-import os
+# Libraries to make the bot work
+import os 
 import discord
 import random
 import asyncio
 from discord.ext import commands
 
-TOKEN = 'NzM4NjAyNTMyMTUwMDUwODg2.XyOTNg.dSFYt7rKAqx8AznF2FT418nxmgE'
+TOKEN = 'NzM4NjAyNTMyMTUwMDUwODg2.XyOTNg.dSFYt7rKAqx8AznF2FT418nxmgE' 
+#Replace token with your own bot's token if you want to reproduce bot results, the token connects the python file to the bot
 
-BOT_PREFIX = ("?", "!")
+BOT_PREFIX = ("?", "!") 
 client = commands.Bot(command_prefix=BOT_PREFIX)
+#the BOT_PREFIX are the prefixes that work with @client.command and the line of code under allows for it to be registered
 
 @client.event
 async def on_ready():
     print('We have logged in as {0.user}'.format(client))
     await client.change_presence(activity=discord.Game(name='A Variety of Games'))
     print(f'{client.user} has connected to Discord!')    
+#the code above are the commands that run when the bot file is run
+#the print statements are printed out to the console so the developer can test when the bot is running
+#the await client.change ... is what happens within discord(The Bot is shown as active and has a title of "Playing A Variety of Games")
+
 
 @client.command()
 async def helper(ctx):
     message = """Activate a command using ! or ?\n
                  Command list includes:\nhelper\nhello\nping\ngamelist\nplay"""
     await ctx.send(message)
+#@client.command is activated using one of the bot prefixes (in this case !helper would be the command)
+#this command just tells the user what commands are available
+#created a variable for message for formatting concerns
+#await ctx.send allows to send the message
 
 @client.command()
 async def hello(ctx):
     msg = 'Hello {0.author.mention}'.format(ctx)
     await ctx.send(msg)
+#this command makes the bot respond back to the user who used !hello with an @
 
 @client.command()
 async def ping(ctx):
     latency = client.latency
     await ctx.send(latency)
+#the client.latency command is used to see how long it takes for the bot to send a message to the user
 
 @client.command()
 async def gamelist(ctx):
@@ -40,42 +52,57 @@ In order to play, type !play followed by a game name
     '''
     #make word game like 8 ball just various letters and quicker time;also another version have you seen this with a score counter; tic tac toe is also cool
     await ctx.send(message)
+#just like the #helper function, using a seperate message in order to format the message
 
 @client.event
 async def on_message(message):
+    #on_message is when a message is sent, using the value of message
     if message.content.startswith('!play') or message.content.startswith('?play'):
-        channel = message.channel
-        userInput = message.content[6:]
-        startmessage = 'Initializing ' + userInput + '...'
+    #just like a prefix command however needs to be analyzed seperately because it is an event with an on_message  
+        channel = message.channel 
+        #shortcut for sending messages so message.channel does not need to be used every time
+        userInput = message.content[6:] 
+        #the part of the message after the "!/?play, allowing it to be analyzed for the game type"
+        startmessage = 'Initializing ' + userInput + '...' 
+        #An initializing message to show the user what game they are playing
         
 
-        if userInput.lower() == "coingame":
-            await channel.send(startmessage)
-            await channel.send("I will flip a coin, make your guess on what side it lands on:")
+        if userInput.lower() == "coingame": 
+        #no matter the case spelling from the user's message, as long the letters match the following code will run
+            await channel.send(startmessage) 
+            #if the game name is valid the startmessage is sent
+            await channel.send("I will flip a coin, make your guess on what side it lands on:") 
+            #telling the user how the game is played
             
             def is_correct(m):
                 return m.author == message.author
-            
+            #function that confirms that the author who sent the initial message is the one who is answering
+
             def coinval_convert(coinval):
                 if coinval == 0:
                     return "Heads"
                 elif coinval == 1:
                     return "Tails"
+            #converts an integer value to either Heads or Tails (which the game needs)
 
-            coinval = random.randint(0,1)
-            new_coinval = coinval_convert(coinval)
+            coinval = random.randint(0,1) #a random value generator with two values
+            new_coinval = coinval_convert(coinval) #converting the number value into a string (Heads or Tails)
             
             try:
                 user_guess = await client.wait_for('message', check=is_correct, timeout = 8.0)
             except asyncio.TimeoutError:
                  return await channel.send('Sorry, you ran out of time. The answer was {}.'.format(new_coinval))
+            #the try/except code is for user input, checks for an input of an message and that it is sent by the initial sender, saving it to a variable
+            # if the user does not send it before the timeout value, the program will end, returning a message giving the correct answer
 
             if user_guess.content.lower() == new_coinval.lower():
                 await channel.send('Yay, you answered correct!')
             else:
                 await channel.send('WRONG!! It was actually {}.'.format(new_coinval))
+            #the if/else is to match the user's guess to the value of the coinflip, with the .lower allowing for different capitalization
             
             await channel.send('You had a {:.2%} chance of getting it right!'.format(1/2))
+            #displaying the chance the user had to get the answer right
 
         elif "diegame" == userInput.lower():
             await channel.send(startmessage)
@@ -83,8 +110,10 @@ async def on_message(message):
             
             def is_correct(m):
                 return m.author == message.author and m.content.isdigit()
-            
+            #similar to the code for coin game, the .isdigit() confirms the user input is a digit
+
             dieval = random.randint(1,6)
+            #generates a random dice val
 
             try:
                 user_guess = await client.wait_for('message', check=is_correct, timeout = 10.0)
@@ -97,6 +126,7 @@ async def on_message(message):
                 await channel.send('WRONG!! It was actually {}.'.format(dieval))   
             
             await channel.send('You had a {:.2%} chance of getting it right!'.format(1/6))
+            #majority of coingame code was used for diegame code
 
         elif "guessinggame" == userInput.lower():
             await channel.send(startmessage)
@@ -108,18 +138,17 @@ async def on_message(message):
             try:
                 range1 = await client.wait_for('message', check=is_correct, timeout = 8.0)
                 range2 = await client.wait_for('message', check=is_correct, timeout = 8.0)
-                range1 = int(range1.content)
-                range2 = int(range2.content)
-
+                range1 = int(range1.content) #converts message content into integer
+                range2 = int(range2.content) #converts message content into integer
             except asyncio.TimeoutError:
                 range1 = 1
                 range2 = 100
                 await channel.send("Sorry, you ran out of time. Choose two numbers faster.\nA default from 1 to 100 has been set.")
-
+            #this first try/except in the code has the user set a range for where to guess a number
+            # If time runs out for the user's interval, then a default of 1 to 100
             
-            numberval = random.randint(range1,range2)
-            print(numberval)
-            bottom = (range2-range1)+1
+            numberval = random.randint(range1,range2) # generates a random value given the range
+            bottom = (range2-range1)+1 #this value is used for percentage purposes
 
             await channel.send("Guess a number from " + str(range1) + " to " + str(range2) + " now!")
 
@@ -127,6 +156,7 @@ async def on_message(message):
                 user_guess = await client.wait_for('message', check=is_correct, timeout = 8.0)
             except asyncio.TimeoutError:
                  return await channel.send('Sorry, you ran out of time. The answer was {}.'.format(numberval))
+            # the second try/except is for the user's guess
 
             if user_guess.content == str(numberval):
                 await channel.send('Yay, you answered correct!')
@@ -145,18 +175,19 @@ async def on_message(message):
             
             try:
                 level = await client.wait_for('message', check=is_correct, timeout = 8.0)
-                level = int(level.content)
-
+                level = int(level.content) #converts message into integer
             except asyncio.TimeoutError:
-                return await channel.send("Sorry, you ran out of time. Choose a level faster")
+                return await channel.send("Sorry, you ran out of time. Choose a level faster next time.")
+                #the return kicks the user out of the program
 
-            range1 = (10 **(level-1))
-            range2 = (10 ** level)-1 
-            tomemorize = random.randint(range1,range2)
-            await channel.send("Memorize this number before it gets deleted!")
-            botMessage = await channel.send(tomemorize)
-            await asyncio.sleep(10)
-            await botMessage.delete()
+            range1 = (10 **(level-1)) 
+            range2 = (10 ** level)-1
+            #doing a bit of math, the range is set so that values only in that digit are present 
+            tomemorize = random.randint(range1,range2) # a random value for only that digit value
+            await channel.send("Memorize this number before it gets deleted!") 
+            botMessage = await channel.send(tomemorize) #stores the message of the number as a variable
+            await asyncio.sleep(10) #code makes it so the user has to wait 10 seconds to memorize and no responses can be sent
+            await botMessage.delete() #the message is deleted after the 10 seconds so the user does not read it off
 
             await channel.send("What " + str(level) + " digit number was that?")
 
@@ -172,15 +203,20 @@ async def on_message(message):
 
         else:
             await channel.send("Please choose a valid game name from gamelist")
+        #else if no valid game is put after the !/?play (or if empty), then bot responds by saying it was not a valid game 
+
             
   
-    await client.process_commands(message)    
+    await client.process_commands(message) 
+    #if an on_message event is not being run, the file will process it anyways so other commands outside of the on_message can be run
 
-# @client.command()
-# async def stock(ctx, *args):
-#     if not args:
-#         await ctx.send("Please add a stock ticker")
-#     else:
-#         await ctx.send(args[0])
+""" 
+@client.command()
+async def stock(ctx, *args):
+    if not args:
+        await ctx.send("Please add a stock ticker")
+    else:
+        await ctx.send(args[0]) """
 
 client.run(TOKEN)
+#this is the command that finally runs the bot using the token value
