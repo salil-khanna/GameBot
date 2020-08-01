@@ -35,9 +35,10 @@ async def ping(ctx):
 @client.command()
 async def gamelist(ctx):
     message = '''
-    List of games includes:\nCoinGame\nDieGame\nGuessTheNumber\nRememberheNumber(Currently not working)\n
+    List of games includes:\nCoinGame\nDieGame\nGuessingGame\nMemoryNumGame\nMemoryWordGame(Not working)\n 
 In order to play, type !play followed by a game name
     '''
+    #make word game like 8 ball just various letters and quicker time;also another version have you seen this with a score counter; tic tac toe is also cool
     await ctx.send(message)
 
 @client.event
@@ -78,13 +79,13 @@ async def on_message(message):
 
         elif "diegame" == userInput.lower():
             await channel.send(startmessage)
-            await channel.send("I will roll a die, make your guess on what number it lands on:")
+            await channel.send("I will roll a 6 sided die, make your guess on what number it lands on:")
             
             def is_correct(m):
                 return m.author == message.author and m.content.isdigit()
             
             dieval = random.randint(1,6)
-            print(dieval)
+
             try:
                 user_guess = await client.wait_for('message', check=is_correct, timeout = 10.0)
             except asyncio.TimeoutError:
@@ -97,7 +98,7 @@ async def on_message(message):
             
             await channel.send('You had a {:.2%} chance of getting it right!'.format(1/6))
 
-        elif "guessthenumber" == userInput.lower():
+        elif "guessinggame" == userInput.lower():
             await channel.send(startmessage)
             await channel.send("Type two numbers to set a range for the guessing:")
             
@@ -133,6 +134,41 @@ async def on_message(message):
                 await channel.send('WRONG!! It was actually {}.'.format(numberval))
             
             await channel.send('You had a {:.2%} chance of getting it right!'.format(1/bottom))
+        
+        elif "memorynumgame" == userInput.lower():
+            await channel.send(startmessage)
+            await channel.send("In this game you will have 10 seconds to remember a number. How good is your memory?")
+            await channel.send("What level do you want?(Number of Digits)")
+            
+            def is_correct(m):
+                return m.author == message.author and m.content.isdigit()
+            
+            try:
+                level = await client.wait_for('message', check=is_correct, timeout = 8.0)
+                level = int(level.content)
+
+            except asyncio.TimeoutError:
+                return await channel.send("Sorry, you ran out of time. Choose a level faster")
+
+            range1 = (10 **(level-1))
+            range2 = (10 ** level)-1 
+            tomemorize = random.randint(range1,range2)
+            await channel.send("Memorize this number before it gets deleted!")
+            botMessage = await channel.send(tomemorize)
+            await asyncio.sleep(10)
+            await botMessage.delete()
+
+            await channel.send("What " + str(level) + " digit number was that?")
+
+            try:
+                user_guess = await client.wait_for('message', check=is_correct, timeout = 8.0)
+            except asyncio.TimeoutError:
+                 return await channel.send('Sorry, you ran out of time. The answer was {}.'.format(tomemorize))
+
+            if user_guess.content == str(tomemorize):
+                await channel.send('Yay, you answered correct!')
+            else:
+                await channel.send('WRONG!! It was actually {}.'.format(tomemorize))
 
         else:
             await channel.send("Please choose a valid game name from gamelist")
