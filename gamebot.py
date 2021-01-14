@@ -4,8 +4,11 @@ import discord
 import random
 import asyncio
 from discord.ext import commands
+import json
+import urllib.request
 
-TOKEN = 'NzM4NjAyNTMyMTUwMDUwODg2.XyOTNg.dSFYt7rKAqx8AznF2FT418nxmgE' 
+
+TOKEN = ... 
 #Replace token with your own bot's token if you want to reproduce bot results, the token connects the python file to the bot
 
 BOT_PREFIX = ("?", "!") 
@@ -34,7 +37,7 @@ async def helper(ctx):
 
 @client.command()
 async def hello(ctx):
-    msg = 'Hello {0.author.mention}'.format(ctx)
+    msg = 'Hello {0.author.mention}! I am GameBot, pleasure to meet you!'.format(ctx)
     await ctx.send(msg)
 #this command makes the bot respond back to the user who used !hello with an @
 
@@ -47,7 +50,7 @@ async def ping(ctx):
 @client.command()
 async def gamelist(ctx):
     message = '''
-    List of games includes:\nCoinGame\nDieGame\nGuessingGame\nMemoryNumGame\nMemoryWordGame(Not working)\n 
+    List of games includes:\nCoinGame\nDieGame\nGuessingGame\nMemoryNumGame\nMemoryWordGame\nWordGame2\n 
 In order to play, type !play followed by a game name
     '''
     #make word game like 8 ball just various letters and quicker time;also another version have you seen this with a score counter; tic tac toe is also cool
@@ -201,22 +204,112 @@ async def on_message(message):
             else:
                 await channel.send('WRONG!! It was actually {}.'.format(tomemorize))
 
+        elif "memorywordgame" == userInput.lower():
+            await channel.send(startmessage)
+            await channel.send("In this game you will have 1 second to remember a random word. How good is your memory?")
+            
+            def is_correct(m):
+                return m.author == message.author and type(m.content) == str
+
+            #takes a list of words from url and turns it into a variable
+            url = urllib.request.urlopen("https://raw.githubusercontent.com/sindresorhus/mnemonic-words/master/words.json")
+            words = json.loads(url.read())
+            tomemorize = random.choice(words)
+            await channel.send("Memorize this word before it gets deleted!") 
+            botMessage = await channel.send(tomemorize) #stores the message of the word as a variable
+            await asyncio.sleep(1) #code makes it so the user has to wait 1 seconds to memorize and no responses can be sent
+            await botMessage.delete() #the message is deleted after the 1 seconds so the user does not read it off
+
+            await channel.send("What word was that?")
+
+            try:
+                user_guess = await client.wait_for('message', check=is_correct, timeout = 8.0)
+            except asyncio.TimeoutError:
+                 return await channel.send('Sorry, you ran out of time. The answer was {}.'.format(tomemorize))
+
+            if user_guess.content == tomemorize:
+                await channel.send('Yay, you answered correct!')
+            else:
+                await channel.send('WRONG!! It was actually {}.'.format(tomemorize))
+      
+        elif "wordgame2" == userInput.lower():
+            await channel.send(startmessage)
+            await channel.send("In this game you will have 3 seconds to determine if you have seen the word before.")
+            await channel.send("Three strikes and you're out!")
+            
+            #determines if the new message is sent by the same as the initial !play message
+            def is_correct(m):
+                return m.author == message.author and type(m.content) == str
+
+            def yesno_convert(answer):
+                if answer.lower() == "yes":
+                    return True
+                elif answer.lower() == "no":
+                    return False
+            #converts an yes or no string value to either True or False
+
+            #takes a list of words from url and turns it into a variable
+            url = urllib.request.urlopen("https://raw.githubusercontent.com/sindresorhus/mnemonic-words/master/words.json")
+            words = json.loads(url.read())
+            tomemorize = random.choice(words) 
+            botMessage = await channel.send("Look at the first word before it gets deleted: " + tomemorize) #stores the message of the word as a variable
+            await asyncio.sleep(3) #code makes it so the user has to wait 3 seconds to memorize and no responses can be sent
+            await botMessage.delete() #the message is deleted after the 3 seconds so the user does not read it off
+            wordlist = []
+            wordlist.append(tomemorize)
+
+            await channel.send("The game has started!") 
+            strikes = 3
+            points = 0
+            #creates a while loop so continues until gameends
+            while strikes > 0:
+                length = len(wordlist)
+                randnumber = random.randint(1,5)
+                #generates a random int val
+                
+                if length < 4:
+                    tomemorize = random.choice(words)
+                elif randnumber == 4 or randnumber == 5:
+                    randval = random.randint(0,length-1)
+                    tomemorize = wordlist[randval]
+                else:
+                    tomemorize = random.choice(words)
+                
+                botMessage = await channel.send("3 seconds to determine... " + tomemorize) #stores the message of the word as a variable
+                await asyncio.sleep(3) #code makes it so the user has to wait 3 seconds to memorize and no responses can be sent
+                await botMessage.delete() #the message is deleted after the 3 seconds so the user does not read it off
+                
+                await channel.send("Has the word been shown before?") 
+
+                try:
+                    user_guess = await client.wait_for('message', check=is_correct, timeout = 8.0)
+                except asyncio.TimeoutError:
+                    await channel.send('Sorry, you ran out of time.')
+                    break #if no answer in 8 seconds, program breaks out of while loop, displays score, and ends
+
+                #uses the function to convert yes or no to true or false
+                useranswer = yesno_convert(user_guess.content)
+                if tomemorize in wordlist and useranswer:
+                    points = points + 1
+                    await channel.send('Correct!\nStrikes left: ' + str(strikes) + "\nPoints: " + str(points))
+                elif tomemorize not in wordlist and not useranswer:
+                    wordlist.append(tomemorize)
+                    points = points + 1
+                    await channel.send('Correct!\nStrikes left: ' + str(strikes) + "\nPoints: " + str(points))
+                else:
+                    strikes = strikes - 1
+                    await channel.send('WRONG!!\nStrikes left: ' + str(strikes) + "\nPoints: " + str(points))
+
+            await channel.send('Game Over. You scored ' + str(points) + ' points.')
+            
         else:
             await channel.send("Please choose a valid game name from gamelist")
         #else if no valid game is put after the !/?play (or if empty), then bot responds by saying it was not a valid game 
 
             
-  
     await client.process_commands(message) 
     #if an on_message event is not being run, the file will process it anyways so other commands outside of the on_message can be run
 
-""" 
-@client.command()
-async def stock(ctx, *args):
-    if not args:
-        await ctx.send("Please add a stock ticker")
-    else:
-        await ctx.send(args[0]) """
 
 client.run(TOKEN)
 #this is the command that finally runs the bot using the token value
